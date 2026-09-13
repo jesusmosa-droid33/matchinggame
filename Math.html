@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ratio Matching Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #e8f5e9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #2e7d32;
+    }
+    .container {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 30px;
+    }
+    .terms, .zones {
+      width: 40%;
+    }
+    .draggable {
+      background-color: #a5d6a7;
+      margin: 10px;
+      padding: 10px;
+      border: 2px solid #2e7d32;
+      border-radius: 5px;
+      cursor: grab;
+    }
+    .dropzone {
+      background-color: #c8e6c9;
+      margin: 10px;
+      padding: 20px;
+      border: 2px dashed #2e7d32;
+      border-radius: 5px;
+      min-height: 50px;
+    }
+    .dropzone.correct {
+      background-color: #66bb6a;
+      border: 2px solid #1b5e20;
+      color: white;
+      font-weight: bold;
+    }
+    #resetBtn {
+      display: block;
+      margin: 30px auto;
+      padding: 10px 20px;
+      background-color: #2e7d32;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #resetBtn:hover {
+      background-color: #1b5e20;
+    }
+    /* Teacher Settings */
+    #teacherPanel {
+      margin: 20px auto;
+      width: 80%;
+      background: #f1f8e9;
+      border: 2px solid #2e7d32;
+      border-radius: 5px;
+      padding: 15px;
+      display: none;
+    }
+    #teacherPanel h2 {
+      color: #2e7d32;
+    }
+    .itemRow {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    .itemRow input {
+      flex: 1;
+      margin-right: 10px;
+      padding: 5px;
+    }
+    .itemRow button {
+      background: #2e7d32;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    #togglePanel {
+      display: block;
+      margin: 10px auto;
+      padding: 8px 15px;
+      background: #388e3c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ratio Matching Game</h1>
+  <button id="togglePanel">Teacher Settings</button>
+  <div id="teacherPanel">
+    <h2>Edit Terms & Questions</h2>
+    <div id="editor"></div>
+    <button id="addItem">Add Item</button>
+    <br><br>
+    <button id="exportBtn">Export JSON</button>
+    <input type="file" id="importFile" style="display:none" />
+    <button id="importBtn">Import JSON</button>
+  </div>
+
+  <div class="container">
+    <div class="terms" id="terms"></div>
+    <div class="zones" id="zones"></div>
+  </div>
+  <button id="resetBtn">Reset Game</button>
+
+  <script>
+    let data = [
+      {id:"term1", term:"Ratio", question:"A comparison of two quantities"},
+      {id:"term2", term:"Equivalent Ratios", question:"Ratios that show the same relationship"},
+      {id:"term3", term:"Simplify", question:"Making a ratio simpler"},
+      {id:"term4", term:"Proportion", question:"Equality of two ratios"},
+      {id:"term5", term:"Colon Symbol (:)", question:"Symbol used in ratios"}
+    ];
+
+    const termsDiv = document.getElementById('terms');
+    const zonesDiv = document.getElementById('zones');
+    const editorDiv = document.getElementById('editor');
+
+    function renderGame(){
+      termsDiv.innerHTML="";
+      zonesDiv.innerHTML="";
+      data.forEach(item=>{
+        const termEl=document.createElement('div');
+        termEl.className="draggable";
+        termEl.id=item.id;
+        termEl.textContent=item.term;
+        termEl.draggable=true;
+        termsDiv.appendChild(termEl);
+
+        const zoneEl=document.createElement('div');
+        zoneEl.className="dropzone";
+        zoneEl.dataset.match=item.id;
+        zoneEl.textContent=item.question;
+        zonesDiv.appendChild(zoneEl);
+      });
+      attachDragEvents();
+    }
+
+    function attachDragEvents(){
+      document.querySelectorAll('.draggable').forEach(item=>{
+        item.addEventListener('dragstart', e=>{
+          e.dataTransfer.setData('text/plain', e.target.id);
+        });
+      });
+      document.querySelectorAll('.dropzone').forEach(zone=>{
+        zone.addEventListener('dragover', e=>e.preventDefault());
+        zone.addEventListener('drop', e=>{
+          e.preventDefault();
+          const draggedId=e.dataTransfer.getData('text/plain');
+          const draggedEl=document.getElementById(draggedId);
+          if(zone.dataset.match===draggedId){
+            zone.textContent=draggedEl.textContent;
+            zone.classList.add('correct');
+            draggedEl.setAttribute('draggable','false');
+            draggedEl.style.opacity='0.5';
+          } else {
+            alert('Incorrect match! Try again.');
+          }
+        });
+      });
+    }
+
+    function renderEditor(){
+      editorDiv.innerHTML="";
+      data.forEach((item,index)=>{
+        const row=document.createElement('div');
+        row.className="itemRow";
+        const termInput=document.createElement('input');
+        termInput.value=item.term;
+        const quesInput=document.createElement('input');
+        quesInput.value=item.question;
+        const delBtn=document.createElement('button');
+        delBtn.textContent="Delete";
+        delBtn.onclick=()=>{
+          data.splice(index,1);
+          renderEditor();
+          renderGame();
+        };
+        termInput.oninput=()=>{item.term=termInput.value; renderGame();};
+        quesInput.oninput=()=>{item.question=quesInput.value; renderGame();};
+        row.appendChild(termInput);
+        row.appendChild(quesInput);
+        row.appendChild(delBtn);
+        editorDiv.appendChild(row);
+      });
+    }
+
+    document.getElementById('resetBtn').onclick=()=>{
+      renderGame();
+    };
+
+    document.getElementById('togglePanel').onclick=()=>{
+      const panel=document.getElementById('teacherPanel');
+      panel.style.display=panel.style.display==="none"?"block":"none";
+      renderEditor();
+    };
+
+    document.getElementById('addItem').onclick=()=>{
+      const newId="term"+(data.length+1);
+      data.push({id:newId, term:"New Term", question:"New Question"});
+      renderEditor();
+      renderGame();
+    };
+
+    document.getElementById('exportBtn').onclick=()=>{
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download="data.json";
+      a.click();
+    };
+
+    document.getElementById('importBtn').onclick=()=>{
+      document.getElementById('importFile').click();
+    };
+
+    document.getElementById('importFile').onchange=(e)=>{
+      const file=e.target.files[0];
+      if(file){
+        const reader=new FileReader();
+        reader.onload=()=>{
+          try{
+            data=JSON.parse(reader.result);
+            renderEditor();
+            renderGame();
+          }catch(err){alert("Invalid JSON file");}
+        };
+        reader.readAsText(file);
+      }
+    };
+
+    // Initialize
+    renderGame();
+  </script>
+</body>
+</html>
